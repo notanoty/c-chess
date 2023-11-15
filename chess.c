@@ -1,4 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() { return 0; }
+struct chessBoard {};
+
+int main() {
+  printf("\u2655\n");
+  return 0;
+}
