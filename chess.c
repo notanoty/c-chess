@@ -42,7 +42,7 @@ void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
 void displayBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
 
     for (int i = 0; i < BOARD_SIZE; ++i) {
-        printf(" %d ", 8 - i);
+        printf("%d ", 8 - i);
         for (int j = 0; j < BOARD_SIZE; ++j) {
             printf("|");
             if (board[i][j].symbol == 0){
@@ -55,10 +55,9 @@ void displayBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
         }
         printf("|\n");
     }
-    char *letters = "abcdefgh";
-    printf("   ");
+    printf("  ");
     for(int i = 0; i  < BOARD_SIZE; ++i){
-      printf("  %c ", letters[i]);
+      printf("  %c ", 'a' + i);
     }
     printf("\n");
 }
