@@ -16,6 +16,17 @@ struct piece {
     bool color;  // true for black, false for white
 };
 
+struct listCoords{
+    int moves[2];
+    struct list *next;
+};
+
+// struct listCoords* addMove(int[2] coords){
+//     struct listCoords newElement = malloc(sizeof(struct listCoords)); 
+//     newElement->next = 
+//     return
+// }
+
 // Function to initialize the chess board
 void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     // Set up the initial position of pieces on the board
