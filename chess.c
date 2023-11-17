@@ -13,7 +13,7 @@
 // Structure to represent a chess piece
 struct piece {
     char symbol;
-    bool color;  // true for white, false for black
+    bool color;  // true for black, false for white
 };
 
 // Function to initialize the chess board
