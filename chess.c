@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+
 
 // Size of the chess board
 #define BOARD_SIZE 8
@@ -14,18 +16,59 @@
 struct piece {
     char symbol;
     bool color;  // true for black, false for white
+    int moveAmount; 
 };
 
 struct listCoords{
-    int moves[2];
-    struct list *next;
+    int coords[2];
+    struct listCoords *next;
 };
 
-// struct listCoords* addMove(int[2] coords){
-//     struct listCoords newElement = malloc(sizeof(struct listCoords)); 
-//     newElement->next = 
-//     return
-// }
+int listLen(struct listCoords *head) {
+    int count = 0;
+    struct listCoords *current = head;
+
+    while (current != NULL) {
+        count++;
+        current = current->next;
+    }
+
+    return count;
+}
+
+
+
+
+// Function to free the memory allocated for the move list
+void freeMoveList(struct listCoords *moveList) {
+    while (moveList != NULL) {
+        struct listCoords *temp = moveList;
+        moveList = moveList->next;
+        free(temp);
+    }
+}
+
+struct listCoords* addMove(int x, int y, struct listCoords* previousList) {
+    struct listCoords* newElement = malloc(sizeof(struct listCoords)); 
+    newElement->coords[0] = x;
+    newElement->coords[1] = y;
+    newElement->next = previousList;
+    return newElement;
+}
+
+
+bool inCoordList(int x, int y, struct listCoords *head) {
+    struct listCoords *current = head;
+
+    while (current != NULL) {
+        if (current->coords[0] == x && current->coords[1] == y) {
+            return true; // Coordinates found in the list
+        }
+        current = current->next;
+    }
+
+    return false; // Coordinates not found in the list
+}
 
 // Function to initialize the chess board
 void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
@@ -35,11 +78,17 @@ void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
         {{'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
-        {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
+        {{ 0, false}, { 0 , false}, {'N' , true}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}},
         {{'R', false}, {'N', false}, {'B', false}, {'Q', false}, {'K', false}, {'B', false}, {'N', false}, {'R', false}}
     };
+    for(int i = 0; i < BOARD_SIZE; i++){
+        initialBoard[0][i].moveAmount = 0;
+        initialBoard[1][i].moveAmount = 0;
+        initialBoard[6][i].moveAmount = 0;
+        initialBoard[7][i].moveAmount = 0;
+    }
 
     // Copy the initial board to the actual board
     for (int i = 0; i < BOARD_SIZE; ++i) {
@@ -48,6 +97,31 @@ void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
         }
     }
 }
+
+
+
+bool isValidPosition(int row, int col) {
+    return (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE);
+}
+
+struct listCoords* knightMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE])
+{
+    printf("Piece = (%c)\n", board[y][x]);
+    struct listCoords *moveList = NULL; 
+    
+    int xOffsets[] = {-1, -1,  1, 1, -2,  2, -2, 2};
+    int yOffsets[] = {-2,  2, -2, 2, -1, -1,  1, 1};
+
+    for (int i = 0; i < 8; ++i) {
+        int newRow = y + xOffsets[i];
+        int newCol = x + yOffsets[i];
+        if (isValidPosition(newRow, newCol) && (board[newRow][newCol].symbol == 0 ||  board[newRow][newCol].color != board[y][x].color ) ) { //
+            moveList = addMove(newRow, newCol, moveList);
+        }
+    }
+};
+
+
 
 // Function to display the chess board
 void displayBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
@@ -73,6 +147,98 @@ void displayBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     printf("\n");
 }
 
+void displayBoardActions(struct piece board[BOARD_SIZE][BOARD_SIZE], struct listCoords* moveList)
+{
+
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        printf("%d ", 8 - i);
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            printf("|");
+            if(inCoordList( i, j, moveList )){
+                if (board[i][j].symbol == 0){
+                  printf("%s%c%c%c%s",  GREEN, 178, 178, 178, WHITE);
+                }
+                else{
+                  printf(" %s%c%s ", GREEN, board[i][j].symbol, WHITE);
+                }
+            }
+            else{
+                if (board[i][j].symbol == 0){
+                  printf("%s%c%c%c%s", ( (i % 2 == 0 && j % 2 == 1) || (i % 2 == 1 && j % 2 == 0)  ) ? BLACK : WHITE, 178, 178, 178, WHITE);
+                }
+                else{
+                  printf(" %s%c%s ", (board[i][j].color) ? BLUE:WHITE, board[i][j].symbol, WHITE);
+                }
+            }
+
+            
+        }
+        printf("|\n");
+    }
+    printf("  ");
+    for(int i = 0; i  < BOARD_SIZE; ++i){
+      printf("  %c ", 'a' + i);
+    }
+    printf("\n");
+}
+
+void displayBoardDebug(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        printf("%d ", i);
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            printf("|");
+            if (board[i][j].symbol == 0){
+              printf("%s%c%c%c%s", ( (i % 2 == 0 && j % 2 == 1) || (i % 2 == 1 && j % 2 == 0)  ) ? BLACK : WHITE, 178, 178, 178, WHITE);
+            }
+            else{
+              printf(" %s%c%s ", (board[i][j].color) ? BLUE:WHITE, board[i][j].symbol, WHITE);
+            }
+            
+        }
+        printf("|\n");
+    }
+    printf("  ");
+    for(int i = 0; i  < BOARD_SIZE; ++i){
+      printf("  %d ", i);
+    }
+    printf("\n");
+}
+
+void displayBoardMoves(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        printf("%d ", 8 - i);
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            printf("|");
+            if (board[i][j].symbol == 0){
+              printf("%s%c%c%c%s", ( (i % 2 == 0 && j % 2 == 1) || (i % 2 == 1 && j % 2 == 0)  ) ? BLACK : WHITE, 178, 178, 178, WHITE);
+            }
+            else{
+              printf(" %s%d%s ", (board[i][j].color) ? BLUE:WHITE, board[i][j].moveAmount, WHITE);
+            }
+            
+        }
+        printf("|\n");
+    }
+    printf("  ");
+    for(int i = 0; i  < BOARD_SIZE; ++i){
+      printf("  %c ", 'a' + i);
+    }
+    printf("\n");
+}
+
+void printMoveList(struct listCoords *moveList) {
+    struct listCoords *current = moveList;
+
+    printf("List of Moves:\n");
+    while (current != NULL) {
+        printf("(%d, %d) ", current->coords[0], current->coords[1]);
+        current = current->next;
+    }
+    printf("\n");
+}
+
 int main() {
     // Declare the chess board using the piece structure
     struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
@@ -82,8 +248,11 @@ int main() {
 
     // Display the initial chess board
     printf("Chess Board:\n");
-    displayBoard(chessBoard);
-
+    displayBoardDebug(chessBoard);
+    struct listCoords *moves =  knightMoves( 2, 4, chessBoard);
+    printf("len = %d\n",listLen);
+    printMoveList(moves);
+    displayBoardActions(chessBoard, moves);
     // Add your code to make moves and update the board as needed
     printf(WHITE);
     return 0;
