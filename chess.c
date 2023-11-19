@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-
 // Size of the chess board
 #define BOARD_SIZE 8
+
 #define GREEN "\033[0;32m"
 
 #define BLUE "\033[0;34m"
@@ -106,7 +106,6 @@ bool isValidPosition(int row, int col) {
 
 struct listCoords* knightMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE])
 {
-    printf("Piece = (%c)\n", board[y][x]);
     struct listCoords *moveList = NULL; 
     
     int xOffsets[] = {-1, -1,  1, 1, -2,  2, -2, 2};
@@ -119,7 +118,29 @@ struct listCoords* knightMoves(int x, int y, struct piece board[BOARD_SIZE][BOAR
             moveList = addMove(newRow, newCol, moveList);
         }
     }
-};
+}
+
+
+int** initializeThreatMap(int threatMap[BOARD_SIZE][BOARD_SIZE]){
+    for(int i = 0; i < BOARD_SIZE; i++ ){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            threatMap[i][j] = 0;
+        }
+    }
+    return (int**)threatMap;
+}
+
+void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int** threatMap, bool color){
+    for(int i = 0; i < BOARD_SIZE; i++ ){
+        for(int j = 0; j < BOARD_SIZE; j++){
+
+        }
+    }
+
+
+} 
+
+
 
 
 
@@ -245,6 +266,17 @@ int main() {
 
     // Initialize the chess board
     initializeBoard(chessBoard);
+
+    int threatMap[BOARD_SIZE][BOARD_SIZE];
+    initializeThreatMap(threatMap);
+
+    for(int i = 0; i < BOARD_SIZE; i++ ){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            printf(" %d ", threatMap[i][j]);
+        }
+        printf("\n");
+    }
+
 
     // Display the initial chess board
     printf("Chess Board:\n");
