@@ -12,7 +12,7 @@
 #define WHITE "\033[0;37m"
 
 
-// Structure to represent a chess piece
+ // Structure to represent a chess piece
 struct piece {
     char symbol;
     bool color;  // true for black, false for white
@@ -37,7 +37,8 @@ int listLen(struct listCoords *head) {
 }
 
 
-
+void printMoveList(struct listCoords *moveList);
+void displayBoardActions(struct piece board[BOARD_SIZE][BOARD_SIZE], struct listCoords* moveList);
 
 // Function to free the memory allocated for the move list
 void freeMoveList(struct listCoords *moveList) {
@@ -78,7 +79,7 @@ void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
         {{'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}, {'P', true}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
-        {{ 0, false}, { 0 , false}, {'N' , true}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
+        {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{ 0, false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}, { 0 , false}},
         {{'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}, {'P', false}},
         {{'R', false}, {'N', false}, {'B', false}, {'Q', false}, {'K', false}, {'B', false}, {'N', false}, {'R', false}}
@@ -121,24 +122,37 @@ struct listCoords* knightMoves(int x, int y, struct piece board[BOARD_SIZE][BOAR
 }
 
 
-int** initializeThreatMap(int threatMap[BOARD_SIZE][BOARD_SIZE]){
+void initializeThreatMap(int threatMap[BOARD_SIZE][BOARD_SIZE]){
     for(int i = 0; i < BOARD_SIZE; i++ ){
         for(int j = 0; j < BOARD_SIZE; j++){
             threatMap[i][j] = 0;
         }
     }
-    return (int**)threatMap;
 }
 
-void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int** threatMap, bool color){
-    for(int i = 0; i < BOARD_SIZE; i++ ){
-        for(int j = 0; j < BOARD_SIZE; j++){
+void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[BOARD_SIZE][BOARD_SIZE], bool color) {
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j].symbol != 0 && board[i][j].color == color) {
+                struct listCoords *movesSave = knightMoves(j, i, board);
+                struct listCoords *moves = movesSave; 
+                int movesLen = listLen(moves);
+                printf("len = %d\n", movesLen);
 
+                printMoveList(moves);
+                displayBoardActions(board, moves);
+
+                for (int iteration = 0; iteration < movesLen; iteration++) {
+                    int x = moves->coords[1];
+                    int y = moves->coords[0];
+                    threatMap[y][x] = 1;
+                    moves = moves->next;
+                }
+                // freeMoveList(moves);  
+            }
         }
     }
-
-
-} 
+}
 
 
 
@@ -269,7 +283,7 @@ int main() {
 
     int threatMap[BOARD_SIZE][BOARD_SIZE];
     initializeThreatMap(threatMap);
-
+    
     for(int i = 0; i < BOARD_SIZE; i++ ){
         for(int j = 0; j < BOARD_SIZE; j++){
             printf(" %d ", threatMap[i][j]);
@@ -277,14 +291,25 @@ int main() {
         printf("\n");
     }
 
+    createThreatMap(chessBoard, threatMap, 1);
+    
+    for(int i = 0; i < BOARD_SIZE; i++ ){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            printf(" %d ", threatMap[i][j]);
+        }
+        printf("\n");
+    }
+
+    //printf("end\n");
+
 
     // Display the initial chess board
-    printf("Chess Board:\n");
-    displayBoardDebug(chessBoard);
-    struct listCoords *moves =  knightMoves( 2, 4, chessBoard);
-    printf("len = %d\n",listLen);
-    printMoveList(moves);
-    displayBoardActions(chessBoard, moves);
+    //printf("Chess Board:\n");
+    //displayBoardDebug(chessBoard);
+
+    //struct listCoords *moves =  knightMoves( 2, 4, chessBoard);
+    //printMoveList(moves);
+    //~displayBoardActions(chessBoard, moves);
     // Add your code to make moves and update the board as needed
     printf(WHITE);
     return 0;
