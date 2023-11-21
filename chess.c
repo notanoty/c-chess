@@ -148,7 +148,7 @@ void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[B
                     threatMap[y][x] = 1;
                     moves = moves->next;
                 }
-                // freeMoveList(moves);  
+                freeMoveList(movesSave);  
             }
         }
     }
