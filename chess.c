@@ -174,11 +174,11 @@ struct listCoords* getKnightMoves(int x, int y, struct piece board[BOARD_SIZE][B
 struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
    
-    int direction = (getColor(board[y][x])) ? -1 : 1; // White pawns move upwards, black pawns move downwards   
+    int direction = (getColor(board[y][x])) ? 1 : -1; // White pawns move upwards, black pawns move downwards   
     // Check one square forward
     int newY = y + direction;
     int newX = x;
-    if (isValidPosition( newX, newY) && board[newY][newX].symbol == ' ') {
+    if (isValidPosition( newX, newY) && board[newY][newX].symbol == 0) {
         moveList = addMove(newX, newY, moveList);
         // Check two squares forward for the initial move
         if ((y == 1 && board[y][x].color) || (y == 6 && !board[y][x].color)) {
@@ -192,7 +192,7 @@ struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BO
     int captureCols[] = {x - 1, x + 1};
     for (int i = 0; i < 2; ++i) {
         newX = captureCols[i];
-        if (isValidPosition(newX, newY) && board[newY][newX].symbol != 0 && board[newY][newX].color != board[y][x].color) {
+        if (isValidPosition(newX, newY) && getColor(board[newY][newX]) != getColor(board[y][x] ) ){// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x])
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -202,15 +202,17 @@ struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BO
 struct listCoords* getPawnThreats(int x, int y,  struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
    
-    int direction = (getColor(board[y][x])) ? -1 : 1; // White pawns move upwards, black pawns move downwards   
+    int direction = (getColor(board[y][x])) ? 1 : -1; // White pawns move upwards, black pawns move downwards   
     // Check one square forward
     int newY = y + direction;
+    printf("newY = %d\n", newY);
     int newX = x;
     // Check capturing moves
     int captureCols[] = {x - 1, x + 1};
     for (int i = 0; i < 2; ++i) {
         newX = captureCols[i];
-        if (isValidPosition(newX, newY) && board[newY][newX].symbol != 0 && board[newY][newX].color != board[y][x].color) {
+        printf("newX = %d\n", newX);
+        if (isValidPosition(newX, newY) && getColor(board[newY][newX]) != getColor(board[y][x] ))  {// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x]))
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -318,7 +320,6 @@ struct listCoords* getPieceThreats(int x, int y, struct piece board[BOARD_SIZE][
     // Check the piece type and call the appropriate function
     switch (getSymbol(currentPiece)) {
         case 'P':
-        //    printf("Pawn moves are not developed yet\n");
            return  getPawnThreats(x, y, board);   
         case 'N':
             return getKnightMoves(x, y, board);
