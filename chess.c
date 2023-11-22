@@ -20,9 +20,28 @@ struct piece {
 };
 
 struct listCoords{
-    int coords[2];
+    int x;
+    int y;
     struct listCoords *next;
 };
+int getX(struct listCoords *coords){
+    return coords->x;
+}
+
+int getY(struct listCoords *coords){
+    return coords->y;
+}
+
+char getSymbol(struct piece piece){
+    return piece.symbol;
+}
+
+bool getColor(struct piece piece){
+    return piece.color;
+}
+int getMoves(struct piece piece){
+    return piece.moveAmount;
+}
 
 int listLen(struct listCoords *head) {
     int count = 0;
@@ -51,8 +70,8 @@ void freeMoveList(struct listCoords *moveList) {
 
 struct listCoords* addMove(int x, int y, struct listCoords* previousList) {
     struct listCoords* newElement = malloc(sizeof(struct listCoords)); 
-    newElement->coords[0] = x;
-    newElement->coords[1] = y;
+    newElement->x = x;
+    newElement->y = y;
     newElement->next = previousList;
     return newElement;
 }
@@ -62,7 +81,7 @@ bool inCoordList(int x, int y, struct listCoords *head) {
     struct listCoords *current = head;
 
     while (current != NULL) {
-        if (current->coords[0] == x && current->coords[1] == y) {
+        if (current->x == x && current->y == y) {
             return true; // Coordinates found in the list
         }
         current = current->next;
@@ -101,24 +120,27 @@ void initializeBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
 
 
 
-bool isValidPosition(int row, int col) {
+bool isValidPosition(int col, int row) {
     return (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE);
 }
 
 struct listCoords* knightMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE])
 {
     struct listCoords *moveList = NULL; 
-    
+    printf("(x = %d)(y = %d)\n", x, y);
     int xOffsets[] = {-1, -1,  1, 1, -2,  2, -2, 2};
     int yOffsets[] = {-2,  2, -2, 2, -1, -1,  1, 1};
 
     for (int i = 0; i < 8; ++i) {
-        int newRow = y + xOffsets[i];
-        int newCol = x + yOffsets[i];
-        if (isValidPosition(newRow, newCol) && (board[newRow][newCol].symbol == 0 ||  board[newRow][newCol].color != board[y][x].color ) ) { //
-            moveList = addMove(newRow, newCol, moveList);
+        int newX = x + xOffsets[i];
+        int newY = y + yOffsets[i];
+        
+        if (isValidPosition(newX, newY) && (  board[newY][newX].symbol == 0 ||  board[newY][newX].color != board[y][x].color )) { //(board[newY][newX].symbol == 0 ||  board[newY][newX].color != board[y][x].color )
+
+            moveList = addMove(newX, newY, moveList);
         }
     }
+    return moveList;
 }
 
 
@@ -136,15 +158,18 @@ void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[B
             if (board[i][j].symbol != 0 && board[i][j].color == color) {
                 struct listCoords *movesSave = knightMoves(j, i, board);
                 struct listCoords *moves = movesSave; 
+                //printf("moves\n");
+                printMoveList(moves); 
                 int movesLen = listLen(moves);
+                // printf("moves\n");
                 printf("len = %d\n", movesLen);
 
-                printMoveList(moves);
+                //printMoveList(moves);
                 displayBoardActions(board, moves);
 
                 for (int iteration = 0; iteration < movesLen; iteration++) {
-                    int x = moves->coords[1];
-                    int y = moves->coords[0];
+                    int x = getX(moves);
+                    int y = getY(moves);
                     threatMap[y][x] = 1;
                     moves = moves->next;
                 }
@@ -189,7 +214,7 @@ void displayBoardActions(struct piece board[BOARD_SIZE][BOARD_SIZE], struct list
         printf("%d ", 8 - i);
         for (int j = 0; j < BOARD_SIZE; ++j) {
             printf("|");
-            if(inCoordList( i, j, moveList )){
+            if(inCoordList( j, i, moveList )){
                 if (board[i][j].symbol == 0){
                   printf("%s%c%c%c%s",  GREEN, 178, 178, 178, WHITE);
                 }
@@ -268,7 +293,7 @@ void printMoveList(struct listCoords *moveList) {
 
     printf("List of Moves:\n");
     while (current != NULL) {
-        printf("(%d, %d) ", current->coords[0], current->coords[1]);
+        printf("(x = %d, y = %d) ", getX(current), getY(current));
         current = current->next;
     }
     printf("\n");
@@ -283,13 +308,14 @@ int main() {
 
     int threatMap[BOARD_SIZE][BOARD_SIZE];
     initializeThreatMap(threatMap);
-    
+    printf("1\n");
     for(int i = 0; i < BOARD_SIZE; i++ ){
         for(int j = 0; j < BOARD_SIZE; j++){
             printf(" %d ", threatMap[i][j]);
         }
         printf("\n");
     }
+    printf("2\n");
 
     createThreatMap(chessBoard, threatMap, 1);
     
@@ -299,6 +325,8 @@ int main() {
         }
         printf("\n");
     }
+
+    printf("3\n");
 
     //printf("end\n");
 
