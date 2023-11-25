@@ -171,6 +171,25 @@ struct listCoords* getKnightMoves(int x, int y, struct piece board[BOARD_SIZE][B
     }
     return moveList;
 }
+struct listCoords* getKnightThreats(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE])
+{
+    struct listCoords *moveList = NULL; 
+    //printf("(x = %d)(y = %d)\n", x, y);
+    int xOffsets[] = {-1, -1,  1, 1, -2,  2, -2, 2};
+    int yOffsets[] = {-2,  2, -2, 2, -1, -1,  1, 1};
+
+    for (int i = 0; i < 8; ++i) {
+        int newX = x + xOffsets[i];
+        int newY = y + yOffsets[i];
+        
+        if (isValidPosition(newX, newY) ) { 
+
+            moveList = addMove(newX, newY, moveList);
+        }
+    }
+    return moveList;
+}
+
 
 struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
@@ -241,6 +260,25 @@ struct listCoords* getBishopMoves(int x, int y, struct piece board[BOARD_SIZE][B
     }
     return moveList;
 }
+struct listCoords* getBishopThreats(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+    struct listCoords *moveList = NULL; 
+    int yOffsets[] = {-1, -1, 1, 1};
+    int xOffsets[] = {-1, 1, -1, 1};
+    for (int i = 0; i < 4; ++i) {
+        int newY = y + yOffsets[i];
+        int newX = x + xOffsets[i];
+        while (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) == 0 ||  getColor(board[newY][newX]) != getColor(board[y][x]) )) {
+            moveList = addMove(newX, newY, moveList);
+            newY += yOffsets[i];
+            newX += xOffsets[i];
+            if (getSymbol(board[newY][newX]) != 0 ) {
+                moveList = addMove(newX, newY, moveList);
+                break; 
+            }
+        }
+    }
+    return moveList;
+}
 
 // Function to get possible moves for a rook
 struct listCoords* getRookMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
@@ -263,22 +301,49 @@ struct listCoords* getRookMoves(int x, int y, struct piece board[BOARD_SIZE][BOA
     return moveList;
 }
 
+struct listCoords* getRookThreats(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+    struct listCoords *moveList = NULL; 
+
+    int yOffsets[] = {-1, 1, 0, 0};
+    int xOffsets[] = {0, 0, -1, 1};    
+    for (int i = 0; i < 4; ++i) {
+        int newY = y + yOffsets[i];
+        int newX = x + xOffsets[i];
+        while (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) == 0 ||  getColor(board[newY][newX]) != getColor(board[y][x]) )) { //&& (getSymbol(board[newY][newX]) == 0 ||  getColor(board[newY][newX]) != getColor(board[y][x]) )
+            moveList = addMove(newX, newY, moveList);
+            if (getSymbol(board[newY][newX]) != 0 ) {
+                break; 
+            }
+            newY += yOffsets[i];
+            newX += xOffsets[i];
+        }
+        if(isValidPosition(newX,newY)){
+            moveList = addMove(newX, newY, moveList);
+        }
+    }
+    return moveList;
+}
+
 // Function to get possible moves for a queen
 struct listCoords* getQueenMoves(int startRow, int startCol, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
 
     return connectLists(getBishopMoves(startRow, startCol, board), getRookMoves(startRow, startCol, board) );
 }
 
+struct listCoords* getQueenThreats(int startRow, int startCol, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+    return connectLists(getBishopThreats(startRow, startCol, board), getRookThreats(startRow, startCol, board) );
+}
+
 // Function to get possible moves for a king
-struct listCoords* getKingMoves(int y, int x, struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[BOARD_SIZE][BOARD_SIZE]) {
+struct listCoords* getKingMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
 
     int yOffsets[] = {-1, -1, -1, 0, 0, 1, 1, 1};
     int xOffsets[] = {-1, 0, 1, -1, 1, -1, 0, 1};
     for (int i = 0; i < 8; ++i) {
         int newY = y + yOffsets[i];
-        int newX = x + yOffsets[i];
-        if (isValidPosition(newY, newX) && threatMap[newY][newX] == 0 && (board[newY][newX].symbol == ' ' || board[newY][newX].color != board[y][x].color)) {
+        int newX = x + xOffsets[i];
+        if (isValidPosition(newY, newX) && threatMap[newY][newX] == 0 && (board[newY][newX].symbol == 0 || board[newY][newX].color != board[y][x].color)) {
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -288,7 +353,7 @@ struct listCoords* getKingMoves(int y, int x, struct piece board[BOARD_SIZE][BOA
     return moveList;
 }
 // Function to get possible moves for a king
-struct listCoords* getKingThreats(int y, int x, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+struct listCoords* getKingThreats(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
 
     int yOffsets[] = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -341,13 +406,13 @@ struct listCoords* getPieceThreats(int x, int y, struct piece board[BOARD_SIZE][
         case 'P':
            return  getPawnThreats(x, y, board);   
         case 'N':
-            return getKnightMoves(x, y, board);
+            return getKnightThreats(x, y, board);
         case 'B':
-            return getBishopMoves(x, y, board);
+            return getBishopThreats(x, y, board);
         case 'R':
-            return getRookMoves(x, y, board);
+            return getRookThreats(x, y, board);
         case 'Q':
-            return getQueenMoves(x, y, board);
+            return getQueenThreats(x, y, board);
         case 'K':
             return  getKingThreats(x, y, board);   
         default:
@@ -573,7 +638,7 @@ void handelInput(int *x, int *y){
     while (true){
         printf("Please input Letter: ");
         char newX;
-        scanf("%c", &newX);
+        scanf(" %c", &newX);
         //printf("x = %c(%d)\n", newX, newX);
         if(newX >= 'A' && newX <= 'H'){
             *x = newX - 'A';
@@ -585,7 +650,7 @@ void handelInput(int *x, int *y){
             break;
         }
         else{
-            printf("Wrong Letter please try again\n");
+            printf("Wrong Letter please try again(x = %d)\n", newX);
         }  
     }
     while (true){
@@ -599,23 +664,24 @@ void handelInput(int *x, int *y){
             break;
         }
         else{
-            printf("Wrong Number please try again\n");
+            printf("Wrong Number please try again(y = %d)\n", newY);
         }
     }
 }
 
-void findKing(struct piece board[BOARD_SIZE][BOARD_SIZE] , bool color, int *x, int *y){
+bool findKing(struct piece board[BOARD_SIZE][BOARD_SIZE] , bool color, int *x, int *y){
 
     for(int i = 0; i < BOARD_SIZE; i++){
         for(int j = 0; j < BOARD_SIZE; j++){
             if(getSymbol( board[i][j]) == 'K' &&  getColor(board[i][j]) == color){
                 *x = j;
                 *y = i;
-                break;
+                return true;
             }
         }
     }
     printf("King was not found\n");
+    return false;
     
 }
 
@@ -629,6 +695,7 @@ bool kingHasMoves(struct piece board[BOARD_SIZE][BOARD_SIZE] ,int threatMap[BOAR
 bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threatMap[BOARD_SIZE][BOARD_SIZE]){
     int x, y; 
     findKing(board, color, &x, &y);
+    printf("kingHasThreats = %d\n!kingHasMoves = %d\n",kingHasThreats(threatMap, x, y), !kingHasMoves(board, threatMap, x, y));
     return kingHasThreats(threatMap, x, y) && !kingHasMoves(board, threatMap, x, y);
 }
 
@@ -636,50 +703,75 @@ bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threa
 void chess(){
     struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
     initializeBoard(chessBoard);
+    struct piece testPiece2 = {'K', false};
+    struct piece testPiece = {'Q', false};
+    struct piece emptyPiece = {0, false};
+    
+    //placePiece( 4, 2, chessBoard, testPiece);
+    placePiece( 4, 1, chessBoard, emptyPiece);
+    placePiece( 4, 6, chessBoard, emptyPiece);
+    //placePiece( 3, 4, chessBoard, testPiece2);
+    //placePiece( 4, 4, chessBoard, emptyPiece);
     displayBoard(chessBoard);
     bool turn = false;
     while(true){
-        int threatMap[BOARD_SIZE][BOARD_SIZE];
-        createThreatMap(chessBoard, threatMap, !turn);
+        int threatMapOppositeTeam [BOARD_SIZE][BOARD_SIZE];
+        initializeThreatMap(threatMapOppositeTeam);
+
+        int threatMapCurentTeam[BOARD_SIZE][BOARD_SIZE];
+        initializeThreatMap(threatMapCurentTeam);
+        
+        createThreatMap(chessBoard, threatMapOppositeTeam, !turn);
+
+        //displayThreatMap(threatMapOppositeTeam);
+        createThreatMap(chessBoard, threatMapCurentTeam, turn);
+        if(checkMate(chessBoard, turn, threatMapOppositeTeam)){
+            break;
+        }
         int x, y;
         printf("---Please choose a piece---\n");
         while (true){
             handelInput(&x, &y); 
             if(getSymbol(chessBoard[y][x]) != 0 && getColor(chessBoard[y][x]) == turn){
-                printf("x = %d, y = %d, piece = %c\n",x,y, getSymbol(chessBoard[y][x]) );
-                struct listCoords* moves = getPieceMoves(x, y, chessBoard, threatMap);
-                displayBoardActions(chessBoard, moves);
-                printf("___Please choose a move___\n");
-                int newX, newY;
-                while (true){
-                    printMoveList(moves);
-                    
-                    handelInput(&newX, &newY);
-                    printf("(x = %d, y = %d, piece = %c)\n",newX,newY, getSymbol(chessBoard[newY][newX]) );
+                //printf("x = %d, y = %d, piece = %c\n",x,y, getSymbol(chessBoard[y][x]) );
+                struct listCoords* moves = getPieceMoves(x, y, chessBoard, threatMapOppositeTeam);
+                if(listLen(moves) != 0){
+                    displayBoardActions(chessBoard, moves);
+                    printf("___Please choose a move___\n");
+                    int newX, newY;
+                    while (true){
+                        //printMoveList(moves);
 
-                    if(inCoordList(newX, newY, moves)){
-                        chessBoard[newY][newX] = chessBoard[y][x];
-                        struct piece newPiece = {0, true};
-                        placePiece( x, y, chessBoard, newPiece);
-                        displayBoard(chessBoard);
-                        break;
+                        handelInput(&newX, &newY);
+                        //printf("(x = %d, y = %d, piece = %c)\n",newX,newY, getSymbol(chessBoard[newY][newX]) );
+
+                        if(inCoordList(newX, newY, moves)){
+                            chessBoard[newY][newX] = chessBoard[y][x];
+                            struct piece newPiece = {0, true};
+                            placePiece( x, y, chessBoard, newPiece);
+                            displayBoard(chessBoard);
+                            break;
+                        }
+                        else{
+                            printf("Wrong square please try again\n");
+                        }
                     }
-                    else{
-                        printf("Wrong square please try again\n");
-                    }
+
+                    break;
                 }
-                
-                break;
+                else{
+                    printf("This piece does not have moves\n");
+                }
             }   
             else{
                 printf("Wrong square please try again\n");
             }
 
         }
-        
-
         turn = !turn;
     }
+    printf("%s - win\n", turn ? "White":"Black");
+
 }
 
 
