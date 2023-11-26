@@ -434,14 +434,8 @@ void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[B
             if (getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color) {
                 struct listCoords *movesSave = getPieceThreats(j, i, board);
                 struct listCoords *moves = movesSave; 
-                //printf("moves\n");
-                //printMoveList(moves); 
-                int movesLen = listLen(moves);
-                // printf("moves\n");
-                //printf("len = %d\n", movesLen);
 
-                //printMoveList(moves);
-                //displayBoardActionsDebug(board, moves);
+                int movesLen = listLen(moves);
 
                 for (int iteration = 0; iteration < movesLen; iteration++) {
                     int x = getX(moves);
@@ -689,7 +683,10 @@ bool kingHasThreats(int threatMap[BOARD_SIZE][BOARD_SIZE], int x , int y){
     return threatMap[y][x] >= 1; 
 }
 bool kingHasMoves(struct piece board[BOARD_SIZE][BOARD_SIZE] ,int threatMap[BOARD_SIZE][BOARD_SIZE], int x , int y){
-    return listLen(getKingMoves( x, y, board, threatMap)) > 0;
+    struct listCoords* kingMoves = getKingMoves( x, y, board, threatMap);
+    int kingMovesAmount = listLen(kingMoves);
+    freeMoveList(kingMoves);
+    return kingMovesAmount > 0; 
 }
 
 bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threatMap[BOARD_SIZE][BOARD_SIZE]){
@@ -762,6 +759,7 @@ void chess(){
                 else{
                     printf("This piece does not have moves\n");
                 }
+                freeMoveList(moves);
             }   
             else{
                 printf("Wrong square please try again\n");
@@ -776,41 +774,7 @@ void chess(){
 
 
 int main() {
-     chess();
-    // Declare the chess board using the piece structure
-
-    // struct piece newPiece = {0, true};
-    // struct piece newPiece2 = {'Q', true};
-    // int x, y; 
-    // handelInput(&x, &y);
-
-    // printf("x = %d\ny = %d\n", x, y);
-    //placePiece( 2, 0, chessBoard, newPiece);
-    //placePiece( 1, 0, chessBoard, newPiece);
-
-    //placePiece( 3, 6, chessBoard, newPiece2);
-
-
-    //printf("\n");
-
-    //createThreatMap(chessBoard, threatMap, 0);
-    
-    //displayThreatMap(threatMap);
-    //printf("\n");
-
-
-
-    //printf("end\n");
-
-
-    // Display the initial chess board
-    //printf("Chess Board:\n");
-    //displayBoardDebug(chessBoard);
-
-    //struct listCoords *moves =  knightMoves( 2, 4, chessBoard);
-    //printMoveList(moves);
-    //~displayBoardActions(chessBoard, moves);
-    // Add your code to make moves and update the board as needed
+    chess();
     printf(WHITE);
     return 0;
 }
