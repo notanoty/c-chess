@@ -199,20 +199,23 @@ struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BO
     int newY = y + direction;
     int newX = x;
     if (isValidPosition( newX, newY) && board[newY][newX].symbol == 0) {
+        printf("bbbbbbbbbbb new\n");
         moveList = addMove(newX, newY, moveList);
         // Check two squares forward for the initial move
-        if ((y == 1 && board[y][x].color) || (y == 6 && !board[y][x].color)) {
-            newY = x + 2 * direction;
-            if (isValidPosition(newY, newX) && board[newY][newX].symbol == 0) {
-                moveList = addMove(newX, newY, moveList);
-            }
+    }
+
+    if ((y == 6) || (y == 1 )) {
+        printf("aaaaaaaa\n");
+        newY = y + 2 * direction;
+        if (isValidPosition(newY, newX) && board[newY][newX].symbol == 0) {
+            moveList = addMove(newX, newY, moveList);
         }
-    }   
+    }
     // Check capturing moves
     int captureCols[] = {x - 1, x + 1};
     for (int i = 0; i < 2; ++i) {
         newX = captureCols[i];
-        if (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) == 0  || getColor(board[newY][newX]) != getColor(board[y][x] )) ){// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x])
+        if (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) != 0  || getColor(board[newY][newX]) != getColor(board[y][x] )) ){// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x])
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -705,8 +708,8 @@ void chess(){
     struct piece emptyPiece = {0, false};
     
     //placePiece( 4, 2, chessBoard, testPiece);
-    placePiece( 4, 1, chessBoard, emptyPiece);
-    placePiece( 4, 6, chessBoard, emptyPiece);
+    //placePiece( 4, 1, chessBoard, emptyPiece);
+    //placePiece( 4, 6, chessBoard, emptyPiece);
     //placePiece( 3, 4, chessBoard, testPiece2);
     //placePiece( 4, 4, chessBoard, emptyPiece);
     displayBoard(chessBoard);
@@ -764,7 +767,6 @@ void chess(){
             else{
                 printf("Wrong square please try again\n");
             }
-
         }
         turn = !turn;
     }
@@ -774,6 +776,17 @@ void chess(){
 
 
 int main() {
+    //struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
+    //initializeBoard(chessBoard);
+    //struct piece testPiece2 = {'P', false};
+    //struct piece testPiece = {'P', true};
+    //struct piece emptyPiece = {0, false};
+    //placePiece( 2 , 5, chessBoard, testPiece2);
+    //placePiece( 3 , 4, chessBoard, testPiece);
+//
+    //struct listCoords* moves = getPawnMoves(2, 5, chessBoard);
+    //displayBoardActionsDebug(chessBoard, moves); 
+
     chess();
     printf(WHITE);
     return 0;
