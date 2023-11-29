@@ -11,6 +11,14 @@
 #define BLACK "\033[0;30m"
 #define WHITE "\033[0;37m"
 
+struct chessMoveList * moveList;
+
+enum moveType {
+    NORMAL,
+    DOUBLE_PAWN_MOVE,
+    EN_PASSANT,
+    CASTLING
+};
 
  // Structure to represent a chess piece
 struct piece {
@@ -22,8 +30,57 @@ struct piece {
 struct listCoords{
     int x;
     int y;
+    enum moveType type;
     struct listCoords *next;
 };
+
+struct chessMoveList{
+    int oldX, oldY, newX, newY;
+    struct piece piece;
+    bool turn;
+    enum moveType type;
+    struct chessMoveList *next;
+};
+
+void getOldCoords(struct chessMoveList *move, int* oldX, int* oldY){
+    *oldX = move->oldX;
+    *oldY = move->oldY;
+}
+
+void getNewCoords(struct chessMoveList *move, int* newX, int* newY){
+    *newX = move->newX;
+    *newY = move->newY;
+}
+
+struct piece getPiece(struct chessMoveList* move){
+    return move->piece;
+}
+
+struct chessMoveList* addChessMove(int oldX, int oldY, int newX, int newY, bool turn, struct piece piece, enum moveType type,struct chessMoveList* previousList) {
+    struct chessMoveList* newElement = malloc(sizeof(struct chessMoveList)); 
+    newElement->oldX = oldX;
+    newElement->oldY = oldY;
+    newElement->newX = newX;
+    newElement->newY = newY;
+    newElement->piece = piece;
+    newElement->turn = turn;
+    newElement->type = type;
+    newElement->next = previousList;
+    return newElement;
+}
+
+int chessMoveListLen(struct chessMoveList *head) {
+    int count = 0;
+    struct chessMoveList *current = head;
+
+    while (current != NULL) {
+        count++;
+        current = current->next;
+    }
+
+    return count;
+}
+
 int getX(struct listCoords *coords){
     return coords->x;
 }
@@ -42,6 +99,11 @@ bool getColor(struct piece piece){
 int getMoveAmount(struct piece piece){
     return piece.moveAmount;
 }
+
+enum moveType getMoveType(struct listCoords *move){
+    return move->type;
+}
+
 
 struct listCoords* getLastCoordElement(struct listCoords* list){
     while(list->next != NULL){
@@ -80,6 +142,16 @@ struct listCoords* addMove(int x, int y, struct listCoords* previousList) {
     struct listCoords* newElement = malloc(sizeof(struct listCoords)); 
     newElement->x = x;
     newElement->y = y;
+    newElement->type = NORMAL;
+    newElement->next = previousList;
+    return newElement;
+}
+
+struct listCoords* addMoveType(int x, int y,  enum moveType type, struct listCoords* previousList) {
+    struct listCoords* newElement = malloc(sizeof(struct listCoords)); 
+    newElement->x = x;
+    newElement->y = y;
+    newElement->type = type;
     newElement->next = previousList;
     return newElement;
 }
@@ -109,6 +181,18 @@ bool inCoordList(int x, int y, struct listCoords *head) {
     }
 
     return false; // Coordinates not found in the list
+}
+struct listCoords * returnInCoordList(int x, int y, struct listCoords *head) {
+    struct listCoords *current = head;
+
+    while (current != NULL) {
+        if (current->x == x && current->y == y) {
+            return current; // Coordinates found in the list
+        }
+        current = current->next;
+    }
+
+    return NULL; // Coordinates not found in the list
 }
 void initializeEmptyBoard(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     for (int i = 0; i < BOARD_SIZE; ++i) {
@@ -199,23 +283,31 @@ struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BO
     int newY = y + direction;
     int newX = x;
     if (isValidPosition( newX, newY) && board[newY][newX].symbol == 0) {
-        printf("bbbbbbbbbbb new\n");
         moveList = addMove(newX, newY, moveList);
         // Check two squares forward for the initial move
     }
 
     if ((y == 6) || (y == 1 )) {
-        printf("aaaaaaaa\n");
-        newY = y + 2 * direction;
+        int startMoveY = y + 2 * direction;
         if (isValidPosition(newY, newX) && board[newY][newX].symbol == 0) {
-            moveList = addMove(newX, newY, moveList);
+            moveList = addMoveType(newX, startMoveY, DOUBLE_PAWN_MOVE, moveList);
         }
     }
+    if ( ((y == 4) || (y == 3 )) && moveList->type == DOUBLE_PAWN_MOVE) { // !!!!!!!!!!!!!!! please future me change this, please, please, please 
+        int captureCols[] = {x - 1, x + 1};
+        for(int i = 0; i < 2; i++){
+            // my code here
+
+        }
+        
+
+    }
+
     // Check capturing moves
     int captureCols[] = {x - 1, x + 1};
     for (int i = 0; i < 2; ++i) {
         newX = captureCols[i];
-        if (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) != 0  || getColor(board[newY][newX]) != getColor(board[y][x] )) ){// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x])
+        if (isValidPosition(newX, newY) && getSymbol(board[newY][newX]) != 0  && getColor(board[newY][newX]) != getColor(board[y][x] ) ){// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x])
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -235,7 +327,7 @@ struct listCoords* getPawnThreats(int x, int y,  struct piece board[BOARD_SIZE][
     for (int i = 0; i < 2; ++i) {
         newX = captureCols[i];
         //printf("newX = %d\n", newX);
-        if (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) == 0  || getColor(board[newY][newX]) != getColor(board[y][x] )) )  {// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x]))
+        if (isValidPosition(newX, newY) )  {// && getSymbol(board[newY][newX]) != 0 && getColor(board[newY][newX]) != getColor(board[y][x]))
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -365,7 +457,7 @@ struct listCoords* getKingThreats(int x, int y, struct piece board[BOARD_SIZE][B
     for (int i = 0; i < 8; ++i) {
         int newY = y + yOffsets[i];
         int newX = x + yOffsets[i];
-        if (isValidPosition(newY, newX) && (board[newY][newX].symbol == ' ' || board[newY][newX].color != board[y][x].color)) {
+        if (isValidPosition(newY, newX) && (board[newY][newX].symbol == 0 || board[newY][newX].color != board[y][x].color)) {
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -623,6 +715,44 @@ void printMoveList(struct listCoords *moveList) {
     printf("\n");
 }
 
+
+void printChessMoveListDebug(struct chessMoveList *moveList) {
+    struct chessMoveList *current = moveList;
+
+    printf("List of Moves:\n");
+    while (current != NULL) {
+        int oldX, oldY, newX, newY;
+        getOldCoords(current, &oldX, &oldY);
+        getNewCoords(current, &newX, &newY);
+
+        printf("%c move from [oldX = %d, oldY  = %d] to [newX = %d, newY  = %d]\n", getSymbol(getPiece(current)), oldX, oldY, newX, newY );
+        current = current->next;
+    }
+    printf("\n");
+}
+
+char coordsToSymbol(int x){
+    return 'a' + x;
+}
+
+void printChessMoveList(struct chessMoveList *moveList) {
+    struct chessMoveList *current = moveList;
+
+    printf("List of Moves:\n");
+    while (current != NULL) {
+        int oldX, oldY, newX, newY;
+        getOldCoords(current, &oldX, &oldY);
+        getNewCoords(current, &newX, &newY);
+
+        printf("%c%c%d to %c%d\n", 
+        getSymbol(getPiece(current)), coordsToSymbol(oldX), oldY, coordsToSymbol(newX), newY );
+        
+        current = current->next;
+    }
+    printf("\n");
+}
+
+
 void placePiece(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE], struct piece newPiece) {
     if (y >= 0 && y < BOARD_SIZE && x >= 0 && x < BOARD_SIZE) {
         board[y][x] = newPiece;
@@ -706,7 +836,8 @@ void chess(){
     struct piece testPiece2 = {'K', false};
     struct piece testPiece = {'Q', false};
     struct piece emptyPiece = {0, false};
-    
+
+    struct chessMoveList * moveList = NULL;
     //placePiece( 4, 2, chessBoard, testPiece);
     //placePiece( 4, 1, chessBoard, emptyPiece);
     //placePiece( 4, 6, chessBoard, emptyPiece);
@@ -715,6 +846,7 @@ void chess(){
     displayBoard(chessBoard);
     bool turn = false;
     while(true){
+        printChessMoveList(moveList);
         int threatMapOppositeTeam [BOARD_SIZE][BOARD_SIZE];
         initializeThreatMap(threatMapOppositeTeam);
 
@@ -746,10 +878,14 @@ void chess(){
                         //printf("(x = %d, y = %d, piece = %c)\n",newX,newY, getSymbol(chessBoard[newY][newX]) );
 
                         if(inCoordList(newX, newY, moves)){
+                            struct listCoords* finalMove = returnInCoordList(newX, newY, moves);
                             chessBoard[newY][newX] = chessBoard[y][x];
                             struct piece newPiece = {0, true};
                             placePiece( x, y, chessBoard, newPiece);
                             displayBoard(chessBoard);
+                            printf("aaaaaaaa\n");
+                            moveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), moveList);
+                            printf("moveLen = %d\n", chessMoveListLen(moveList));
                             break;
                         }
                         else{
@@ -776,16 +912,16 @@ void chess(){
 
 
 int main() {
-    //struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
-    //initializeBoard(chessBoard);
-    //struct piece testPiece2 = {'P', false};
-    //struct piece testPiece = {'P', true};
-    //struct piece emptyPiece = {0, false};
-    //placePiece( 2 , 5, chessBoard, testPiece2);
-    //placePiece( 3 , 4, chessBoard, testPiece);
-//
-    //struct listCoords* moves = getPawnMoves(2, 5, chessBoard);
-    //displayBoardActionsDebug(chessBoard, moves); 
+    // struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
+    // initializeBoard(chessBoard);
+    // struct piece testPiece2 = {'P', false};
+    // struct piece testPiece = {'P', true};
+    // struct piece emptyPiece = {0, false};
+    // placePiece( 2 , 5, chessBoard, testPiece2);
+    // placePiece( 3 , 4, chessBoard, testPiece);
+
+    // struct listCoords* moves = getPawnMoves(2, 5, chessBoard);
+    // displayBoardActionsDebug(chessBoard, moves); 
 
     chess();
     printf(WHITE);
