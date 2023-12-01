@@ -11,7 +11,6 @@
 #define BLACK "\033[0;30m"
 #define WHITE "\033[0;37m"
 
-struct chessMoveList * moveList;
 
 enum moveType {
     NORMAL,
@@ -19,7 +18,23 @@ enum moveType {
     EN_PASSANT,
     CASTLING
 };
-
+char* returnMoveType(enum moveType moveType){
+    if(moveType == NORMAL){
+        return "NORMAL";
+    }
+    else if(moveType == DOUBLE_PAWN_MOVE){
+        return "DOUBLE_PAWN_MOVE";
+    }    
+    else if(moveType == EN_PASSANT){
+        return "EN_PASSANT";
+    }   
+    else if(moveType == CASTLING){
+        return "CASTLING";
+    }
+    else{
+        return "Type is not defined";
+    }
+}
  // Structure to represent a chess piece
 struct piece {
     char symbol;
@@ -51,10 +66,18 @@ void getNewCoords(struct chessMoveList *move, int* newX, int* newY){
     *newX = move->newX;
     *newY = move->newY;
 }
+int getNewX(struct chessMoveList *move){
+    return move->newX;
+}
+
+int getNewY(struct chessMoveList *move){
+    return move->newY;
+}
 
 struct piece getPiece(struct chessMoveList* move){
     return move->piece;
 }
+
 
 struct chessMoveList* addChessMove(int oldX, int oldY, int newX, int newY, bool turn, struct piece piece, enum moveType type,struct chessMoveList* previousList) {
     struct chessMoveList* newElement = malloc(sizeof(struct chessMoveList)); 
@@ -128,6 +151,7 @@ int listLen(struct listCoords *head) {
 void printMoveList(struct listCoords *moveList);
 void displayBoardActions(struct piece board[BOARD_SIZE][BOARD_SIZE], struct listCoords* moveList);
 void displayBoardActionsDebug(struct piece board[BOARD_SIZE][BOARD_SIZE], struct listCoords* moveList);
+void printChessMoveListDebug(struct chessMoveList *moveList);
 
 // Function to free the memory allocated for the move list
 void freeMoveList(struct listCoords *moveList) {
@@ -275,7 +299,7 @@ struct listCoords* getKnightThreats(int x, int y, struct piece board[BOARD_SIZE]
 }
 
 
-struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BOARD_SIZE]) {
+struct listCoords* getPawnMoves(int x, int y, struct chessMoveList *chessMoveList, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
    
     int direction = (getColor(board[y][x])) ? 1 : -1; // White pawns move upwards, black pawns move downwards   
@@ -289,18 +313,24 @@ struct listCoords* getPawnMoves(int x, int y,  struct piece board[BOARD_SIZE][BO
 
     if ((y == 6) || (y == 1 )) {
         int startMoveY = y + 2 * direction;
-        if (isValidPosition(newY, newX) && board[newY][newX].symbol == 0) {
+        if (isValidPosition(newX, newY) && board[newY][newX].symbol == 0) {
             moveList = addMoveType(newX, startMoveY, DOUBLE_PAWN_MOVE, moveList);
         }
     }
-    if ( ((y == 4) || (y == 3 )) && moveList->type == DOUBLE_PAWN_MOVE) { // !!!!!!!!!!!!!!! please future me change this, please, please, please 
+    
+    //printChessMoveListDebug(moveList);
+    if (((y == 3) || (y == 4)) && chessMoveList !=NULL && chessMoveList->type == DOUBLE_PAWN_MOVE) { //   !!!!!!!!!!!!!!! please future me change this, please, please, please 
         int captureCols[] = {x - 1, x + 1};
+        int doublePawnX, doublePawnY;
+
+        getNewCoords(chessMoveList, &doublePawnX, &doublePawnY);
+
         for(int i = 0; i < 2; i++){
-            // my code here
-
+            printf("my x = %d my y = %d new x = %d new y = %d\n", captureCols[i], y , doublePawnX, doublePawnY);
+            if (isValidPosition(captureCols[i], y) && doublePawnX == captureCols[i] && doublePawnY == y && isValidPosition(captureCols[i], y + direction) && board[y][captureCols[i]].symbol != 0) {
+                moveList = addMoveType(captureCols[i], y + direction, EN_PASSANT, moveList);
+            }
         }
-        
-
     }
 
     // Check capturing moves
@@ -468,7 +498,7 @@ struct listCoords* getKingThreats(int x, int y, struct piece board[BOARD_SIZE][B
 }
 
 // Function to get moves for a piece based on its type
-struct listCoords* getPieceMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[BOARD_SIZE][BOARD_SIZE]) {
+struct listCoords* getPieceMoves(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE], struct chessMoveList * chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]) {
     // Get the piece at the specified position
     struct piece currentPiece = board[y][x];
 
@@ -476,7 +506,7 @@ struct listCoords* getPieceMoves(int x, int y, struct piece board[BOARD_SIZE][BO
     switch (getSymbol(currentPiece)) {
         case 'P':
         //    printf("Pawn moves are not developed yet\n");
-           return  getPawnMoves(x, y, board);   
+           return  getPawnMoves(x, y, chessMoveList, board);   
         case 'N':
             return getKnightMoves(x, y, board);
         case 'B':
@@ -725,7 +755,8 @@ void printChessMoveListDebug(struct chessMoveList *moveList) {
         getOldCoords(current, &oldX, &oldY);
         getNewCoords(current, &newX, &newY);
 
-        printf("%c move from [oldX = %d, oldY  = %d] to [newX = %d, newY  = %d]\n", getSymbol(getPiece(current)), oldX, oldY, newX, newY );
+        printf("%s %c move from [oldX = %d, oldY  = %d] to [newX = %d, newY  = %d] type %s \n", current->turn? "black" : "white",
+        getSymbol(getPiece(current)), oldX, oldY, newX, newY, returnMoveType(current->type));
         current = current->next;
     }
     printf("\n");
@@ -834,19 +865,19 @@ void chess(){
     struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
     initializeBoard(chessBoard);
     struct piece testPiece2 = {'K', false};
-    struct piece testPiece = {'Q', false};
-    struct piece emptyPiece = {0, false};
+    struct piece testPiece = {'P', false};
+    struct piece emptyPiece = {0 , false};
 
-    struct chessMoveList * moveList = NULL;
+    struct chessMoveList * chessMoveList = NULL;
     //placePiece( 4, 2, chessBoard, testPiece);
     //placePiece( 4, 1, chessBoard, emptyPiece);
     //placePiece( 4, 6, chessBoard, emptyPiece);
-    //placePiece( 3, 4, chessBoard, testPiece2);
+    placePiece( 3, 4, chessBoard, testPiece);
     //placePiece( 4, 4, chessBoard, emptyPiece);
     displayBoard(chessBoard);
     bool turn = false;
     while(true){
-        printChessMoveList(moveList);
+        printChessMoveListDebug(chessMoveList);
         int threatMapOppositeTeam [BOARD_SIZE][BOARD_SIZE];
         initializeThreatMap(threatMapOppositeTeam);
 
@@ -866,7 +897,7 @@ void chess(){
             handelInput(&x, &y); 
             if(getSymbol(chessBoard[y][x]) != 0 && getColor(chessBoard[y][x]) == turn){
                 //printf("x = %d, y = %d, piece = %c\n",x,y, getSymbol(chessBoard[y][x]) );
-                struct listCoords* moves = getPieceMoves(x, y, chessBoard, threatMapOppositeTeam);
+                struct listCoords* moves = getPieceMoves(x, y, chessBoard, chessMoveList, threatMapOppositeTeam);
                 if(listLen(moves) != 0){
                     displayBoardActions(chessBoard, moves);
                     printf("___Please choose a move___\n");
@@ -883,9 +914,13 @@ void chess(){
                             struct piece newPiece = {0, true};
                             placePiece( x, y, chessBoard, newPiece);
                             displayBoard(chessBoard);
-                            printf("aaaaaaaa\n");
-                            moveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), moveList);
-                            printf("moveLen = %d\n", chessMoveListLen(moveList));
+                            chessMoveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), chessMoveList);
+                            if(chessMoveList->type == EN_PASSANT){
+                                printf("this happened\n");
+                                placePiece( getNewX(chessMoveList), getNewY(chessMoveList) + (chessMoveList->turn? -1 : 1), chessBoard, emptyPiece);
+                            }
+                            displayBoard(chessBoard);
+                            //printf("moveLen = %d\n", chessMoveListLen(chessMoveList));
                             break;
                         }
                         else{
