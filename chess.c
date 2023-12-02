@@ -18,6 +18,7 @@ enum moveType {
     EN_PASSANT,
     CASTLING
 };
+
 char* returnMoveType(enum moveType moveType){
     if(moveType == NORMAL){
         return "NORMAL";
@@ -472,9 +473,32 @@ struct listCoords* getKingMoves(int x, int y, struct piece board[BOARD_SIZE][BOA
             moveList = addMove(newX, newY, moveList);
         }
     }
-    /*
-        Somehow i need to find a way to add castling her 
-    */
+
+    if(x == 4 && (y == 7 || y == 0) && getMoveAmount(board[y][x]) == 0){
+        bool pieceBlock = false;
+        for(int i = 5; i < BOARD_SIZE - 1; i++){
+           if(getSymbol(board[y][i]) != 0 ){
+               pieceBlock = true;
+               break;
+           }
+        }
+        if(!pieceBlock && getSymbol(board[y][7]) == 'R' && getMoveAmount(board[y][7]) == 0){
+            moveList = addMoveType(x + 2 , y, CASTLING, moveList);
+        }
+        pieceBlock = false;
+
+        for(int i = 3; i > 0 ; i--){
+           if(getSymbol(board[y][i]) != 0 ){
+               pieceBlock = true;
+               break;
+           }
+        }
+        if( !pieceBlock && getSymbol(board[y][0]) == 'R' && getMoveAmount(board[y][0]) == 0 ){
+            moveList = addMoveType(x - 3 , y, CASTLING, moveList);
+        }        
+
+    }
+
     return moveList;
 }
 // Function to get possible moves for a king
@@ -491,9 +515,7 @@ struct listCoords* getKingThreats(int x, int y, struct piece board[BOARD_SIZE][B
             moveList = addMove(newX, newY, moveList);
         }
     }
-    /*
-        Somehow i need to find a way to add castling her 
-    */
+
     return moveList;
 }
 
@@ -864,7 +886,7 @@ bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threa
 void chess(){
     struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
     initializeBoard(chessBoard);
-    struct piece testPiece2 = {'K', false};
+    struct piece testPiece2 = {'Q', true};
     struct piece testPiece = {'P', false};
     struct piece emptyPiece = {0 , false};
 
@@ -872,7 +894,18 @@ void chess(){
     //placePiece( 4, 2, chessBoard, testPiece);
     //placePiece( 4, 1, chessBoard, emptyPiece);
     //placePiece( 4, 6, chessBoard, emptyPiece);
-    placePiece( 3, 4, chessBoard, testPiece);
+    placePiece( 1 ,7, chessBoard, emptyPiece);
+    placePiece( 2 ,7, chessBoard, emptyPiece);
+    placePiece( 3 ,7, chessBoard, emptyPiece);
+    placePiece( 5 ,7, chessBoard, emptyPiece);
+    placePiece( 6 ,7, chessBoard, emptyPiece);
+
+    placePiece( 1 , 0, chessBoard, emptyPiece);
+    placePiece( 2 , 0, chessBoard, emptyPiece);
+    placePiece( 3 , 0, chessBoard, emptyPiece);
+    placePiece( 5 , 0, chessBoard, emptyPiece);
+    placePiece( 6 , 0, chessBoard, emptyPiece);
+
     //placePiece( 4, 4, chessBoard, emptyPiece);
     displayBoard(chessBoard);
     bool turn = false;
@@ -916,9 +949,26 @@ void chess(){
                             displayBoard(chessBoard);
                             chessMoveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), chessMoveList);
                             if(chessMoveList->type == EN_PASSANT){
-                                printf("this happened\n");
                                 placePiece( getNewX(chessMoveList), getNewY(chessMoveList) + (chessMoveList->turn? -1 : 1), chessBoard, emptyPiece);
                             }
+                            //printf("this happened\n");
+
+                            if(chessMoveList->type == CASTLING){
+                                if(getNewX(chessMoveList) == 1){
+                                    printf("this happened11111\n");
+                                    placePiece( 2, getNewY(chessMoveList), chessBoard, chessBoard[getNewY(chessMoveList)][0] );
+                                    placePiece( 0, getNewY(chessMoveList), chessBoard, emptyPiece);
+
+                                }
+                                if(getNewX(chessMoveList) == 6){
+                                    printf("this happened11111\n");
+                                    placePiece( 5,  getNewY(chessMoveList), chessBoard, chessBoard[getNewY(chessMoveList)][7] );
+                                    placePiece( 7, getNewY(chessMoveList), chessBoard, emptyPiece);
+
+                                }
+                                //placePiece( getNewX(chessMoveList), getNewY(chessMoveList) + (chessMoveList->turn? -1 : 1), chessBoard, emptyPiece);
+                            }
+                            chessBoard[getNewY(chessMoveList)][getNewX(chessMoveList)].moveAmount += 1; 
                             displayBoard(chessBoard);
                             //printf("moveLen = %d\n", chessMoveListLen(chessMoveList));
                             break;
