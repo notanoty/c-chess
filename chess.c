@@ -44,16 +44,15 @@ struct piece {
 };
 
 struct listCoords{
-    int x;
-    int y;
+    int x, y;
     enum moveType type;
     struct listCoords *next;
 };
 
-struct protectorPiece{
+struct protectorPieceList{
     int x, y;
     struct listCoords *moves;
-    struct protectorPiece *next;
+    struct protectorPieceList *next;
 };
 
 struct chessMoveList{
@@ -168,6 +167,14 @@ void freeMoveList(struct listCoords *moveList) {
         free(temp);
     }
 }
+void freeProtectorPieceList(struct protectorPieceList *protectorPiece) {
+    while (protectorPiece != NULL) {
+        struct protectorPieceList  *temp = protectorPiece;
+        freeMoveList( protectorPiece->moves);
+        protectorPiece = protectorPiece->next;
+        free(temp);
+    }
+}
 
 struct listCoords* addMove(int x, int y, struct listCoords* previousList) {
     struct listCoords* newElement = malloc(sizeof(struct listCoords)); 
@@ -186,7 +193,17 @@ struct listCoords* addMoveType(int x, int y,  enum moveType type, struct listCoo
     newElement->next = previousList;
     return newElement;
 }
-struct protectorPiece* addProtectorPiece(int x, int y);
+
+
+struct protectorPieceList* addProtectorPiece(int x, int y,  struct listCoords *moves, struct protectorPieceList* previousList){
+    struct protectorPieceList*  newElement = malloc(sizeof(struct protectorPieceList)); 
+    newElement->x = x;
+    newElement->y = y;
+    newElement->moves = moves;
+    newElement->next = previousList;
+    return newElement;
+}
+
 struct listCoords* connectLists(struct listCoords* list1, struct listCoords* list2) {
     if (list1 == NULL) {
         return list2;
@@ -813,6 +830,19 @@ void printChessMoveList(struct chessMoveList *moveList) {
 }
 
 
+void printProtectorPieceList(struct protectorPieceList  *protectorPieceList) {
+    struct protectorPieceList  *current = protectorPieceList;
+
+    printf("List of Moves:\n");
+    while (current != NULL) {
+        printf("coords x - %d y - %d\n", current->x, current->y);
+        printMoveList(current->moves);
+        
+        current = current->next;
+    }
+    printf("\n");
+}
+
 void placePiece(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE], struct piece newPiece) {
     if (y >= 0 && y < BOARD_SIZE && x >= 0 && x < BOARD_SIZE) {
         board[y][x] = newPiece;
@@ -921,18 +951,20 @@ bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, stru
     return false; 
 }
 
-bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, struct chessMoveList *chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]){
+struct protectorPieceList *protectKingMoves(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, struct chessMoveList *chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]){
     int kingX, kingY;
     findKing(board, color, &kingX, &kingY);
-    
+    struct protectorPieceList *protectorPieceList = NULL; 
     //if( !kingHasThreats(threatMap, ) || kingHasMoves)
     for(int i = 0; i < BOARD_SIZE; i++){
         for(int j = 0; j < BOARD_SIZE; j++){
             if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color && getSymbol(board[i][j]) != 'K' ){
                 struct listCoords* moves = getPieceMoves( j, i, board, chessMoveList, threatMap);
                 struct listCoords* movesCopy = moves;
+                struct listCoords* protectingMoves = NULL;
                 while(movesCopy != NULL){
                     struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
+
                     copyBoard(checkBoard, board); 
                     checkBoard[movesCopy->y][movesCopy->x] = checkBoard[i][j];
                     struct piece newPiece = {0, true};
@@ -940,16 +972,25 @@ bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, stru
                     initializeThreatMap(threatMapNew);
                     createThreatMap(checkBoard, threatMapNew, !color);
                     if(!kingHasThreats(threatMapNew, kingX, kingY)){
-                        return true;
+                        struct listCoords* temp = movesCopy;
+                        movesCopy = movesCopy->next;
+                        temp->next = protectingMoves;
+                        protectingMoves = temp;
                     }
-                    movesCopy = movesCopy->next;
-                   
-                }   
-                freeMoveList(moves);
+                    else{
+                        struct listCoords* temp = movesCopy;
+                        movesCopy = movesCopy->next;
+                        free(temp);
+                    }
+                } 
+                if(protectingMoves != NULL){
+                    protectorPieceList = addProtectorPiece(j, i, protectingMoves, protectorPieceList);
+                }  
+
             }
         }
     }
-    return false; 
+    return protectorPieceList; 
 }
 
 bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threatMap[BOARD_SIZE][BOARD_SIZE]){
@@ -1005,12 +1046,18 @@ void chess(){
         int kingX, kingY;
         findKing(chessBoard, turn, &kingX, &kingY);
         //printf("aaaaaaaaaaaa!\n");
-        if(kingHasThreats(threatMapOppositeTeam, kingX, kingY) && canProtectKing(chessBoard, turn, chessMoveList,threatMapOppositeTeam)){
-            printf("aaaaaaaaaaaaaaaaaaaaaa it works from the first time aaaaaaaaaaaaaa\n");
+        bool kingUnderAttack = false;
+        if(kingHasThreats(threatMapOppositeTeam, kingX, kingY)){
+            if( canProtectKing(chessBoard, turn, chessMoveList,threatMapOppositeTeam)){
+                // struct protectorPieceList *protectorPieceList = protectKingMoves(chessBoard, turn, chessMoveList,threatMapOppositeTeam);
+                // printProtectorPieceList(protectorPieceList);
+                kingUnderAttack = true;
+            }
+            else{
+                break;
+            }
         }
-        if(checkMate(chessBoard, turn, threatMapOppositeTeam)){
-            break;
-        }
+
         int x, y;
         printf("---Please choose a piece---\n");
         while (true){
