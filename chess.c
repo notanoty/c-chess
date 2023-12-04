@@ -50,6 +50,12 @@ struct listCoords{
     struct listCoords *next;
 };
 
+struct protectorPiece{
+    int x, y;
+    struct listCoords *moves;
+    struct protectorPiece *next;
+};
+
 struct chessMoveList{
     int oldX, oldY, newX, newY;
     struct piece piece;
@@ -180,6 +186,7 @@ struct listCoords* addMoveType(int x, int y,  enum moveType type, struct listCoo
     newElement->next = previousList;
     return newElement;
 }
+struct protectorPiece* addProtectorPiece(int x, int y);
 struct listCoords* connectLists(struct listCoords* list1, struct listCoords* list2) {
     if (list1 == NULL) {
         return list2;
@@ -864,6 +871,13 @@ bool findKing(struct piece board[BOARD_SIZE][BOARD_SIZE] , bool color, int *x, i
     return false;
     
 }
+void copyBoard(struct piece destBoard[BOARD_SIZE][BOARD_SIZE], struct piece srcBoard[BOARD_SIZE][BOARD_SIZE]) {
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            destBoard[i][j] = srcBoard[i][j];
+        }
+    }
+}
 
 bool kingHasThreats(int threatMap[BOARD_SIZE][BOARD_SIZE], int x , int y){
     return threatMap[y][x] >= 1; 
@@ -873,6 +887,69 @@ bool kingHasMoves(struct piece board[BOARD_SIZE][BOARD_SIZE] ,int threatMap[BOAR
     int kingMovesAmount = listLen(kingMoves);
     freeMoveList(kingMoves);
     return kingMovesAmount > 0; 
+}
+
+
+bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, struct chessMoveList *chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]){
+    int kingX, kingY;
+    findKing(board, color, &kingX, &kingY);
+    
+    //if( !kingHasThreats(threatMap, ) || kingHasMoves)
+    for(int i = 0; i < BOARD_SIZE; i++){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color && getSymbol(board[i][j]) != 'K' ){
+                struct listCoords* moves = getPieceMoves( j, i, board, chessMoveList, threatMap);
+                struct listCoords* movesCopy = moves;
+                while(movesCopy != NULL){
+                    struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
+                    copyBoard(checkBoard, board); 
+                    checkBoard[movesCopy->y][movesCopy->x] = checkBoard[i][j];
+                    struct piece newPiece = {0, true};
+                    int threatMapNew[BOARD_SIZE][BOARD_SIZE];
+                    initializeThreatMap(threatMapNew);
+                    createThreatMap(checkBoard, threatMapNew, !color);
+                    if(!kingHasThreats(threatMapNew, kingX, kingY)){
+                        return true;
+                    }
+                    movesCopy = movesCopy->next;
+                   
+                }   
+                freeMoveList(moves);
+            }
+        }
+    }
+    return false; 
+}
+
+bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, struct chessMoveList *chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]){
+    int kingX, kingY;
+    findKing(board, color, &kingX, &kingY);
+    
+    //if( !kingHasThreats(threatMap, ) || kingHasMoves)
+    for(int i = 0; i < BOARD_SIZE; i++){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color && getSymbol(board[i][j]) != 'K' ){
+                struct listCoords* moves = getPieceMoves( j, i, board, chessMoveList, threatMap);
+                struct listCoords* movesCopy = moves;
+                while(movesCopy != NULL){
+                    struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
+                    copyBoard(checkBoard, board); 
+                    checkBoard[movesCopy->y][movesCopy->x] = checkBoard[i][j];
+                    struct piece newPiece = {0, true};
+                    int threatMapNew[BOARD_SIZE][BOARD_SIZE];
+                    initializeThreatMap(threatMapNew);
+                    createThreatMap(checkBoard, threatMapNew, !color);
+                    if(!kingHasThreats(threatMapNew, kingX, kingY)){
+                        return true;
+                    }
+                    movesCopy = movesCopy->next;
+                   
+                }   
+                freeMoveList(moves);
+            }
+        }
+    }
+    return false; 
 }
 
 bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threatMap[BOARD_SIZE][BOARD_SIZE]){
@@ -887,7 +964,7 @@ void chess(){
     struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
     initializeBoard(chessBoard);
     struct piece testPiece2 = {'Q', true};
-    struct piece testPiece = {'P', false};
+    struct piece testPiece = {'P', true};
     struct piece emptyPiece = {0 , false};
 
     struct chessMoveList * chessMoveList = NULL;
@@ -896,15 +973,19 @@ void chess(){
     //placePiece( 4, 6, chessBoard, emptyPiece);
     placePiece( 1 ,7, chessBoard, emptyPiece);
     placePiece( 2 ,7, chessBoard, emptyPiece);
-    placePiece( 3 ,7, chessBoard, emptyPiece);
+    placePiece( 4 ,6, chessBoard, emptyPiece);
     placePiece( 5 ,7, chessBoard, emptyPiece);
     placePiece( 6 ,7, chessBoard, emptyPiece);
 
-    placePiece( 1 , 0, chessBoard, emptyPiece);
-    placePiece( 2 , 0, chessBoard, emptyPiece);
-    placePiece( 3 , 0, chessBoard, emptyPiece);
-    placePiece( 5 , 0, chessBoard, emptyPiece);
-    placePiece( 6 , 0, chessBoard, emptyPiece);
+    // placePiece( 1 , 0, chessBoard, emptyPiece);
+    // placePiece( 2 , 0, chessBoard, emptyPiece);
+    // placePiece( 3 , 0, chessBoard, testPiece);
+    placePiece( 4 , 1, chessBoard, emptyPiece);
+    // placePiece( 5 , 0, chessBoard, testPiece);
+    // placePiece( 6 , 0, chessBoard, testPiece);
+    // placePiece( 7 , 0, chessBoard, testPiece);
+    // placePiece( 5 , 0, chessBoard, emptyPiece);
+    // placePiece( 6 , 0, chessBoard, emptyPiece);
 
     //placePiece( 4, 4, chessBoard, emptyPiece);
     displayBoard(chessBoard);
@@ -917,10 +998,15 @@ void chess(){
         int threatMapCurentTeam[BOARD_SIZE][BOARD_SIZE];
         initializeThreatMap(threatMapCurentTeam);
         
-        createThreatMap(chessBoard, threatMapOppositeTeam, !turn);
 
+        createThreatMap(chessBoard, threatMapOppositeTeam, !turn);
         //displayThreatMap(threatMapOppositeTeam);
         createThreatMap(chessBoard, threatMapCurentTeam, turn);
+        int kingX, kingY;
+        findKing(chessBoard, turn, &kingX, &kingY);
+        if(kingHasThreats(threatMapOppositeTeam, kingX, kingY) && canProtectKing(chessBoard, turn, chessMoveList,threatMapOppositeTeam)){
+            printf("aaaaaaaaaaaaaaaaaaaaaa it works from the first time aaaaaaaaaaaaaa\n");
+        }
         if(checkMate(chessBoard, turn, threatMapOppositeTeam)){
             break;
         }
