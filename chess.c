@@ -1004,6 +1004,7 @@ void chess(){
         createThreatMap(chessBoard, threatMapCurentTeam, turn);
         int kingX, kingY;
         findKing(chessBoard, turn, &kingX, &kingY);
+        //printf("aaaaaaaaaaaa!\n");
         if(kingHasThreats(threatMapOppositeTeam, kingX, kingY) && canProtectKing(chessBoard, turn, chessMoveList,threatMapOppositeTeam)){
             printf("aaaaaaaaaaaaaaaaaaaaaa it works from the first time aaaaaaaaaaaaaa\n");
         }
