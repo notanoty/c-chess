@@ -423,7 +423,6 @@ struct listCoords* getKnightThreats(int x, int y, struct piece board[BOARD_SIZE]
         int newY = y + yOffsets[i];
         
         if (isValidPosition(newX, newY) ) { 
-
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -478,7 +477,7 @@ struct listCoords* getPawnMoves(int x, int y, struct chessMoveList *chessMoveLis
 
 struct listCoords* getPawnThreats(int x, int y,  struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
-   
+
     int direction = (getColor(board[y][x])) ? 1 : -1; // White pawns move upwards, black pawns move downwards   
     // Check one square forward
     int newY = y + direction;
@@ -519,19 +518,22 @@ struct listCoords* getBishopMoves(int x, int y, struct piece board[BOARD_SIZE][B
 }
 struct listCoords* getBishopThreats(int x, int y, struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     struct listCoords *moveList = NULL; 
-    int yOffsets[] = {-1, -1, 1, 1};
-    int xOffsets[] = {-1, 1, -1, 1};
+    int yOffsets[] = {-1, -1,  1, 1};
+    int xOffsets[] = {-1,  1, -1, 1};
     for (int i = 0; i < 4; ++i) {
         int newY = y + yOffsets[i];
         int newX = x + xOffsets[i];
         while (isValidPosition(newX, newY) && (getSymbol(board[newY][newX]) == 0 ||  getColor(board[newY][newX]) != getColor(board[y][x]) )) {
             moveList = addMove(newX, newY, moveList);
-            newY += yOffsets[i];
-            newX += xOffsets[i];
+            
             if (getSymbol(board[newY][newX]) != 0 ) {
+                //printf("newX = %d newY = %d\n", newX, newY);
                 moveList = addMove(newX, newY, moveList);
                 break; 
             }
+
+            newY += yOffsets[i];
+            newX += xOffsets[i];
         }
     }
     return moveList;
@@ -640,9 +642,11 @@ struct listCoords* getKingThreats(int x, int y, struct piece board[BOARD_SIZE][B
     int xOffsets[] = {-1, 0, 1, -1, 1, -1, 0, 1};
 
     for (int i = 0; i < 8; ++i) {
+
         int newY = y + yOffsets[i];
-        int newX = x + yOffsets[i];
-        if (isValidPosition(newY, newX) && (board[newY][newX].symbol == 0 || board[newY][newX].color != board[y][x].color)) {
+        int newX = x + xOffsets[i];
+
+        if (isValidPosition(newX, newY) && (board[newY][newX].symbol == 0 || board[newY][newX].color != board[y][x].color)) {
             moveList = addMove(newX, newY, moveList);
         }
     }
@@ -658,7 +662,6 @@ struct listCoords* getPieceMoves(int x, int y, struct piece board[BOARD_SIZE][BO
     // Check the piece type and call the appropriate function
     switch (getSymbol(currentPiece)) {
         case 'P':
-        //    printf("Pawn moves are not developed yet\n");
             return  getPawnMoves(x, y, chessMoveList, board);   
         case 'N':
             return getKnightMoves(x, y, board);
@@ -725,6 +728,7 @@ void createThreatMap(struct piece board[BOARD_SIZE][BOARD_SIZE], int threatMap[B
             }
         }
     }
+
 }
 
 
@@ -1072,17 +1076,25 @@ void handelInput(int *x, int *y){
 }
 
 bool findKing(struct piece board[BOARD_SIZE][BOARD_SIZE] , bool color, int *x, int *y){
+    //displayBoardDebug(board);
+    //printf("findKing start\n");
 
     for(int i = 0; i < BOARD_SIZE; i++){
+
         for(int j = 0; j < BOARD_SIZE; j++){
+
             if(getSymbol( board[i][j]) == 'K' &&  getColor(board[i][j]) == color){
                 *x = j;
                 *y = i;
+                //printf("findKing end true\n");
+
                 return true;
             }
         }
     }
-    printf("King was not found\n");
+    //printf("findKing end false\n");
+
+    //printf("King was not found\n");
     return false;
 }
 
@@ -1108,11 +1120,10 @@ bool kingHasMoves(struct piece board[BOARD_SIZE][BOARD_SIZE] ,int threatMap[BOAR
 bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, struct chessMoveList *chessMoveList , int threatMap[BOARD_SIZE][BOARD_SIZE]){
     int kingX, kingY;
     findKing(board, color, &kingX, &kingY);
-    
     //if( !kingHasThreats(threatMap, ) || kingHasMoves)
     for(int i = 0; i < BOARD_SIZE; i++){
         for(int j = 0; j < BOARD_SIZE; j++){
-            if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color && getSymbol(board[i][j]) != 'K' ){
+            if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color ){
                 struct listCoords* moves = getPieceMoves( j, i, board, chessMoveList, threatMap);
                 struct listCoords* movesCopy = moves;
                 while(movesCopy != NULL){
@@ -1133,6 +1144,7 @@ bool canProtectKing(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, stru
             }
         }
     }
+
     return false; 
 }
 
@@ -1144,6 +1156,7 @@ struct protectorPieceList *protectKingMoves(struct piece board[BOARD_SIZE][BOARD
     for(int i = 0; i < BOARD_SIZE; i++){
         for(int j = 0; j < BOARD_SIZE; j++){
             if(getSymbol(board[i][j]) != 0 && getColor(board[i][j]) == color){
+
                 struct listCoords* moves = getPieceMoves( j, i, board, chessMoveList, threatMap);
                 struct listCoords* movesCopy = moves;
                 struct listCoords* protectingMoves = NULL;
@@ -1183,20 +1196,24 @@ bool checkMate(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color, int threa
     if(!findKing(board, color, &x, &y))
         return true;
     
-    //printf("kingHasThreats = %d\n!kingHasMoves = %d\n",kingHasThreats(threatMap, x, y), !kingHasMoves(board, threatMap, x, y));
     return kingHasThreats(threatMap, x, y) && !canProtectKing(board,color, NULL, threatMap);
 }
 
 bool checkMateT(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color){
-    int threatMap[BOARD_SIZE][BOARD_SIZE];
-    initializeThreatMap(threatMap);
-    createThreatMap(board, threatMap, !color);
-    int x, y; 
+    
+    struct piece newBoard[BOARD_SIZE][BOARD_SIZE];
+    copyBoard(newBoard, board);
 
+    int threatMapOppositeTeam[BOARD_SIZE][BOARD_SIZE];
+    initializeThreatMap(threatMapOppositeTeam);
+    createThreatMap(board, threatMapOppositeTeam, !color);
+    int x, y; 
+    //findKing(newBoard, color, &x, &y);
     if(!findKing(board, color, &x, &y)){
         return true;
     }
-    return kingHasThreats(threatMap, x, y) && !canProtectKing(board,color, NULL, threatMap);
+    //printf("kingHasThreats = %d kingHasMoves = %d canProtectKing = %d\n", kingHasThreats(threatMapOppositeTeam, x, y), kingHasMoves(board,threatMapOppositeTeam, x, y), canProtectKing(board,color, NULL, threatMapOppositeTeam));
+    return kingHasThreats(threatMapOppositeTeam, x, y) && !kingHasMoves(board,threatMapOppositeTeam, x, y) && !canProtectKing(board,color, NULL, threatMapOppositeTeam);
 }
 
 struct protectorPieceList *getAllMoves(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color){
@@ -1226,17 +1243,18 @@ struct protectorPieceList *getAllMoves(struct piece board[BOARD_SIZE][BOARD_SIZE
 struct protectorPieceList *getAllMovesP(struct piece board[BOARD_SIZE][BOARD_SIZE], bool color){
 
     int kingX, kingY;
+
     if(!findKing(board, color, &kingX, &kingY)){
-        //printf("aaaaaaaaaa\n");
         return NULL;
     }
-    struct protectorPieceList *protectorPieceList = NULL; 
     int threatMapOppositeTeam [BOARD_SIZE][BOARD_SIZE];
     initializeThreatMap(threatMapOppositeTeam);
     createThreatMap(board, threatMapOppositeTeam, !color);
     if(kingHasThreats(threatMapOppositeTeam, kingX, kingY)){
         return protectKingMoves(board, color, NULL, threatMapOppositeTeam); 
     }
+
+    struct protectorPieceList *protectorPieceList = NULL; 
 
     for(int i = 0; i < BOARD_SIZE; i++){
         for(int j = 0; j < BOARD_SIZE; j++){
@@ -1252,7 +1270,11 @@ struct protectorPieceList *getAllMovesP(struct piece board[BOARD_SIZE][BOARD_SIZ
     return protectorPieceList; 
 }
 
-
+void movePiece(struct piece board[BOARD_SIZE][BOARD_SIZE], int oldX, int oldY, int newX, int newY){
+    struct piece emptyPiece = {0, false};
+    board[newY][newX] = board[oldY][oldX];
+    board[oldY][oldX] = emptyPiece;
+}
 
 int evaluate(struct piece board[BOARD_SIZE][BOARD_SIZE]) {
     int score = 0;
@@ -1294,55 +1316,76 @@ int maxi(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color ) ;
 int mini(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color ) ;
 
 int maxi(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color) {
-    int emptyX, emptyY;
-    if(!findKing(board, !color, &emptyX, &emptyY) && checkMateT(board, !color)){
-        return 100000;
-    }
-    if (depth == 0) 
-        return evaluate(board);
+    
+    
+    //struct piece newBoard[BOARD_SIZE][BOARD_SIZE];
+    //copyBoard(newBoard, board);
+    //int threatMapOppositeTeam[BOARD_SIZE][BOARD_SIZE];
+    //initializeThreatMap(threatMapOppositeTeam);
+    //createThreatMap(newBoard, threatMapOppositeTeam, color);
+    //int x, y; 
+    //findKing(board, !color, &x, &y);
 
-    int max = INT_MIN; // Use INT_MIN for the worst case for maximizer
+    if( checkMateT(board, color)){  //kingHasThreats(threatMapOppositeTeam, x, y)){ //checkMateT(board, !color)  ){ 
+        //printf("checkmate\n");
+        return -100;
+    }
+
+    if (depth == 0) {
+        return evaluate(board);
+    }
+
+    int max = -50;//INT_MIN; 
     
     struct protectorPieceList* allPieceMoves = getAllMovesP(board, color);
     
+
     while (allPieceMoves != NULL) {
         struct listCoords* moves = allPieceMoves->moves;
 
         while(moves != NULL){
             struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
             copyBoard(checkBoard, board); 
-            checkBoard[moves->y][moves->x] = checkBoard[allPieceMoves->y][allPieceMoves->x];
-            struct piece newPiece = {0, false};
-            placePiece(allPieceMoves->x, allPieceMoves->y, checkBoard, newPiece);
-            // displayBoard(checkBoard);
-            int score = mini(checkBoard, depth - 1, !color);
+            movePiece(checkBoard, allPieceMoves->x, allPieceMoves->y, moves->x, moves->y );
 
+            int score = mini(checkBoard, depth - 1, !color);
             if (score > max){
-                //printf("new max = %d\n", score);
                 max = score;
             }
-
             moves = moves->next;
         }
         allPieceMoves = allPieceMoves->next;
     }
 
-    // Free allPieceMoves list here if necessary
-
     return max;
 }
 
 int mini(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color) {
-    int emptyX, emptyY;
-    if(!findKing(board, !color, &emptyX, &emptyY) && checkMateT(board, !color)){
-        return -100000;
+    //printf("ccccc\n");
+    //displayBoardDebug(board);
+
+    //struct piece newBoard[BOARD_SIZE][BOARD_SIZE];
+    //copyBoard(newBoard, board);
+    //int threatMapCurentTeam[BOARD_SIZE][BOARD_SIZE];
+    //initializeThreatMap(threatMapCurentTeam);
+    //createThreatMap(newBoard, threatMapCurentTeam, !color);
+    //int x, y; 
+    //findKing(board, color, &x, &y);
+    //printf("king x - %d king y - %d\n", x, y);
+    //displayThreatMap(threatMapCurentTeam);
+
+    if( checkMateT(board, color)){ //checkMateT(board, !color)  ){ 
+        //printf("checkmate\n");
+        return 100;
     }
+
+
     
-    if (depth == 0) 
-        return -evaluate(board);
+    if (depth == 0) {
+        return evaluate(board);
+    }
 
-
-    int min = INT_MAX; // Use INT_MAX for the worst case for minimizer
+    int min = 50;//INT_MAX; // Use INT_MAX for the worst case for minimizer
     
     struct protectorPieceList* allPieceMoves = getAllMovesP(board, color);
 
@@ -1352,17 +1395,12 @@ int mini(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color) {
         while(moves != NULL){
             struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
             copyBoard(checkBoard, board); 
-            checkBoard[moves->y][moves->x] = checkBoard[allPieceMoves->y][allPieceMoves->x];
-            struct piece newPiece = {0, false};
-            placePiece(allPieceMoves->x, allPieceMoves->y, checkBoard, newPiece);
-            // displayBoard(checkBoard);
+            movePiece(checkBoard, allPieceMoves->x, allPieceMoves->y, moves->x, moves->y );
+
 
             int score = maxi(checkBoard, depth - 1,  !color);
 
             if (score < min){
-                //printf("new min = %d\n", score);
-                // displayBoard(checkBoard);
-                //printf("\n");
                 min = score;
             }
 
@@ -1376,6 +1414,41 @@ int mini(struct piece board[BOARD_SIZE][BOARD_SIZE], int depth, bool color) {
     return min;
 }
 
+struct moveScoreList*  findBestMove(struct piece chessBoard[BOARD_SIZE][BOARD_SIZE],  bool color) { // bool color
+    struct protectorPieceList* allPieceMoves = getAllMoves(chessBoard, color);
+    struct moveScoreList* moveScoreList = NULL;
+
+    while (allPieceMoves != NULL) {
+        struct listCoords* moves = allPieceMoves->moves;
+
+        while(moves != NULL){
+            struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
+            copyBoard(checkBoard, chessBoard); 
+            movePiece(checkBoard, allPieceMoves->x, allPieceMoves->y, moves->x, moves->y);
+            int score;
+
+            if(!color){
+                score = mini(checkBoard, 3, !color);
+            }
+            else{
+                score = maxi(checkBoard, 3, !color);
+            }
+
+            moveScoreList = addMoveScoreList( allPieceMoves->x, allPieceMoves->y,  moves->x, moves->y, score, moveScoreList);
+
+            moves = moves->next;
+        }
+        allPieceMoves = allPieceMoves->next;
+    }
+    if(!color){
+        return findMaxScore(moveScoreList);
+    }
+    else{
+        return findMinScore(moveScoreList);
+    }
+}
+
+
 
 void handleSpecialMoves(struct chessMoveList *chessMoveList, struct piece chessBoard[BOARD_SIZE][BOARD_SIZE], struct piece *emptyPiece) {
     // Check if the last move was an En Passant
@@ -1386,12 +1459,12 @@ void handleSpecialMoves(struct chessMoveList *chessMoveList, struct piece chessB
 
     // Check if the last move was Castling
     if(chessMoveList->type == CASTLING){
-        // Handle queenside castling
+        // Handle queen side castling
         if(getNewX(chessMoveList) == 1){
             placePiece(2, getNewY(chessMoveList), chessBoard, chessBoard[getNewY(chessMoveList)][0]);
             placePiece(0, getNewY(chessMoveList), chessBoard, *emptyPiece);
         }
-        // Handle kingside castling
+        // Handle king side castling
         if(getNewX(chessMoveList) == 6){
             placePiece(5, getNewY(chessMoveList), chessBoard, chessBoard[getNewY(chessMoveList)][7]);
             placePiece(7, getNewY(chessMoveList), chessBoard, *emptyPiece);
@@ -1455,90 +1528,110 @@ void chess(){
 
         // Check if the king is under attack and if it can be protected
         if(kingHasThreats(threatMapOppositeTeam, kingX, kingY)){
-            if(canProtectKing(chessBoard, turn, chessMoveList, threatMapOppositeTeam)){
+            
+            if(canProtectKing(chessBoard, turn, chessMoveList, threatMapOppositeTeam) ){
                 protectorPieceList = protectKingMoves(chessBoard, turn, chessMoveList, threatMapOppositeTeam);
+                printProtectorPieceList(protectorPieceList);
                 printf("\n\n\nking IS Under Attack !!!!\n\n\n\n");
                 kingUnderAttack = true;
-            } else {
+            } 
+            if (kingHasMoves(chessBoard, threatMapOppositeTeam, kingX, kingY)){
+                protectorPieceList = addProtectorPiece(kingX, kingY, getKnightMoves(kingX, kingY,chessBoard),protectorPieceList);
+            }
+
+            if(!canProtectKing(chessBoard, turn, chessMoveList, threatMapOppositeTeam) && !kingHasMoves(chessBoard, threatMapOppositeTeam, kingX, kingY)) {
                 // End the game if the king cannot be protected
                 break;
             }
         }
+        
+        if(turn){
+            
+            struct moveScoreList* save = findBestMove(chessBoard, turn); // findMaxScore(moveScoreList);
+            save->next = NULL;
+            //printMoveScoreList(save);
+            //displayBoardDebug(chessBoard);
+            //placePiece( save->newX , save->newY, chessBoard,  chessBoard[save->oldY][save->oldX]);
+            movePiece(chessBoard, save->oldX, save->oldY, save->newX , save->newY);
 
+        }
         // Player's turn to choose a piece
-        int x, y;
-        printf("---Please choose a piece---\n");
-        while (true){
-            // Display the board with protecting pieces if the king is under attack
-            if(kingUnderAttack){
-                displayBoardProtectingPieces(chessBoard, protectorPieceList);
-            }
-
-            // Handle player input for piece selection
-            handelInput(&x, &y); 
-
-            // Validate the selected square
-            if(getSymbol(chessBoard[y][x]) == 0 || getColor(chessBoard[y][x]) != turn){
-                printf("Wrong square please try again\n");
-                continue;
-            }
-
-            // Check if the selected piece can protect the king if it is under attack
-            if(kingUnderAttack && !inCoordProtectorPieceList(x, y, protectorPieceList)){
-                printf("This piece cannot protect King\n");
-                continue; 
-            }
-
-            // Get the list of valid moves for the selected piece
-            struct listCoords* moves = getPieceMoves(x, y, chessBoard, chessMoveList, threatMapOppositeTeam);
-
-            // Check if the selected piece has any valid moves
-            if(listLen(moves) == 0){
-                printf("This piece does not have moves\n");
-                continue;
-            }
-
-            // Display the board with possible actions for the selected piece
-            displayBoardActions(chessBoard, moves);
-            printf("___Please choose a move___\n");
-            int newX, newY;
+        else{
+            int x, y;
+            printf("---Please choose a piece---\n");
             while (true){
-                // Handle player input for move selection
-                handelInput(&newX, &newY);
+                // Display the board with protecting pieces if the king is under attack
+                if(kingUnderAttack){
+                    displayBoardProtectingPieces(chessBoard, protectorPieceList);
+                }
 
-                // Validate the selected move
-                if(!inCoordList(newX, newY, moves)){
-                    printf("Wrong move please try again\n");
+                // Handle player input for piece selection
+                handelInput(&x, &y); 
+
+                // Validate the selected square
+                if(getSymbol(chessBoard[y][x]) == 0 || getColor(chessBoard[y][x]) != turn){
+                    printf("Wrong square please try again\n");
                     continue;
                 }
 
-                // Process the selected move
-                struct listCoords* finalMove = returnInCoordList(newX, newY, moves);
-                chessBoard[newY][newX] = chessBoard[y][x];
-                struct piece newPiece = {0, true};
-                placePiece( x, y, chessBoard, newPiece);
-                displayBoard(chessBoard);
+                // Check if the selected piece can protect the king if it is under attack
+                if(kingUnderAttack && !inCoordProtectorPieceList(x, y, protectorPieceList)){
+                    printf("This piece cannot protect King\n");
+                    continue; 
+                }
 
-                // Update the chess move list with the new move
-                chessMoveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), chessMoveList);
+                // Get the list of valid moves for the selected piece
+                struct listCoords* moves = getPieceMoves(x, y, chessBoard, chessMoveList, threatMapOppositeTeam);
 
-                // Handle special moves like En Passant and Castling
-                handleSpecialMoves(chessMoveList, chessBoard, &emptyPiece);
-                
-                // Increment the move count for the moved piece
-                chessBoard[getNewY(chessMoveList)][getNewX(chessMoveList)].moveAmount += 1; 
-                displayBoard(chessBoard);
+                // Check if the selected piece has any valid moves
+                if(listLen(moves) == 0){
+                    printf("This piece does not have moves\n");
+                    continue;
+                }
+
+                // Display the board with possible actions for the selected piece
+                displayBoardActions(chessBoard, moves);
+                printf("___Please choose a move___\n");
+                int newX, newY;
+                while (true){
+                    // Handle player input for move selection
+                    handelInput(&newX, &newY);
+
+                    // Validate the selected move
+                    if(!inCoordList(newX, newY, moves)){
+                        printf("Wrong move please try again\n");
+                        continue;
+                    }
+
+                    // Process the selected move
+                    struct listCoords* finalMove = returnInCoordList(newX, newY, moves);
+
+                    movePiece(chessBoard, x, y, newX, newY);
+
+                    displayBoard(chessBoard);
+
+                    // Update the chess move list with the new move
+                    chessMoveList = addChessMove(x, y, newX, newY, turn, chessBoard[newY][newX], getMoveType(finalMove), chessMoveList);
+
+                    // Handle special moves like En Passant and Castling
+                    handleSpecialMoves(chessMoveList, chessBoard, &emptyPiece);
+
+                    // Increment the move count for the moved piece
+                    chessBoard[getNewY(chessMoveList)][getNewX(chessMoveList)].moveAmount += 1; 
+                    displayBoard(chessBoard);
+                    break;
+                }
+
                 break;
+
+                // Clean up the list of moves
+                freeMoveList(moves);
             }
 
-            break;
-
-            // Clean up the list of moves
-            freeMoveList(moves);
+            // Switch turns
         }
-
-        // Switch turns
         turn = !turn;
+
     }
 
     // Display the winning player
@@ -1547,65 +1640,8 @@ void chess(){
 
 int main() {
     
-    struct piece chessBoard[BOARD_SIZE][BOARD_SIZE];
-    initializeEmptyBoard(chessBoard);
-    struct piece testPiece = {'N', true};
-    struct piece testPiece2 = {'N', false};
-    struct piece testPiece3 = {'K', false};
-    struct piece testPiece4 = {'K', true};
-    struct piece testPiece5 = {'Q', false};
-
-    struct piece emptyPiece = {0, false};
-    placePiece( 4 , 5, chessBoard, testPiece2);
-    placePiece( 4 , 6, chessBoard, testPiece5);
-    placePiece( 3 , 6, chessBoard, testPiece5);
-
-    placePiece( 3 , 3, chessBoard, testPiece);
-
-
-
-    placePiece( 3 , 0, chessBoard, testPiece3);
-    placePiece( 7 , 7, chessBoard, testPiece4);
-
-
-
-    displayBoard(chessBoard);
-    //printf("%d\n", maxi(chessBoard, 2));
-    bool color = false;
-    struct protectorPieceList* allPieceMoves = getAllMoves(chessBoard, color);
-    struct moveScoreList* moveScoreList = NULL;
-
-    while (allPieceMoves != NULL) {
-        struct listCoords* moves = allPieceMoves->moves;
-
-        while(moves != NULL){
-            struct piece checkBoard[BOARD_SIZE][BOARD_SIZE];
-            copyBoard(checkBoard, chessBoard); 
-            checkBoard[moves->y][moves->x] = checkBoard[allPieceMoves->y][allPieceMoves->x];
-            struct piece newPiece = {0, false};
-            placePiece(allPieceMoves->x, allPieceMoves->y, checkBoard, newPiece);
-
-            int score = maxi(checkBoard, 1, color);
-
-            moveScoreList = addMoveScoreList( allPieceMoves->x, allPieceMoves->y,  moves->x, moves->y, score, moveScoreList);
-
-            moves = moves->next;
-        }
-        allPieceMoves = allPieceMoves->next;
-    }
-    printMoveScoreList(moveScoreList);
-    struct moveScoreList* save = findMaxScore(moveScoreList);
-    save->next = NULL;
-    printMoveScoreList(save);
-    displayBoardDebug(chessBoard);
-    placePiece( save->newX , save->newY, chessBoard,  chessBoard[save->oldY][save->oldX]);
-    chessBoard[save->oldY][save->oldX] = emptyPiece;
-    displayBoardDebug(chessBoard);
-
-    //struct listCoords* moves = getPawnMoves(2, 5, chessBoard);
-    //displayBoardActionsDebug(chessBoard, moves); 
-
-    //chess();
+    chess();
+    printf("end\n");
     printf(WHITE);
     return 0;
 }
